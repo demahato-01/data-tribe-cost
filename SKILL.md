@@ -490,6 +490,7 @@ Explicitly state which owners have no projects under this folder (from the compu
 
 Repo: `git@github.com:demahato-01/data-tribe-cost.git`
 Local clone: `/tmp/data-tribe-cost`
+**Live URL:** `https://demahato-01.github.io/data-tribe-cost/` (GitHub Pages, public)
 
 ```bash
 # Clone if not present, otherwise pull latest
@@ -505,9 +506,12 @@ mkdir -p /tmp/data-tribe-cost/reports/$REPORT_DATE
 cp /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html /tmp/data-tribe-cost/reports/$REPORT_DATE/dashboard.html
 cp /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html /tmp/data-tribe-cost/dashboard.html
 
+# Keep SKILL.md in sync
+cp /Users/demahato/.claude/skills/dnd-cost/SKILL.md /tmp/data-tribe-cost/SKILL.md
+
 # Commit and push
 cd /tmp/data-tribe-cost
-git add reports/$REPORT_DATE/dashboard.html dashboard.html
+git add reports/$REPORT_DATE/dashboard.html dashboard.html SKILL.md
 git -c user.name="Deepak Mahato" -c user.email="demahato@groupon.com" \
   commit -m "Add cost report $REPORT_DATE"
 git push origin main
@@ -518,11 +522,17 @@ git push origin main
 reports/
   2026-06-22/dashboard.html   ← historical snapshot
   2026-06-29/dashboard.html   ← next run adds a new folder
-dashboard.html                ← always the latest run
+dashboard.html                ← always the latest run (root URL redirects here)
+index.html                    ← auto-redirect to dashboard.html
 Service Portal info.csv
 SKILL.md
 README.md
 ```
+
+**Shareable URLs (GitHub Pages):**
+- Latest dashboard: `https://demahato-01.github.io/data-tribe-cost/dashboard.html`
+- Dated snapshot: `https://demahato-01.github.io/data-tribe-cost/reports/YYYY-MM-DD/dashboard.html`
+- Root (auto-redirects to latest): `https://demahato-01.github.io/data-tribe-cost/`
 
 Each run creates `reports/YYYY-MM-DD/dashboard.html` (the dated snapshot) and overwrites the root `dashboard.html` (the "latest" link). If the same date is run twice, the second run overwrites that date's folder — this is intentional.
 
