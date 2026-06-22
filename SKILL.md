@@ -51,7 +51,7 @@ The dashboard is scoped to projects owned by these 5 team members only:
 | Saurabh Santhosh | `#f687b3` |
 | Deepak Mahato | `#d69e2e` |
 
-**Effective owner priority:** Service Owner → Tech Lead → Product Owner (strip `(Inactive)` / `(Unconfirmed)`)
+**Effective owner priority:** Service Owner → Tech Lead → Product Owner. Entries marked `(Inactive)` or `(Unconfirmed)` are **skipped entirely** — the next active person in the chain is used instead. Also store only active values for `service_owner`, `tech_lead`, `product_owner` fields on the info dict (set to `''` if inactive).
 
 **Note:** Audrius Sadauskas, Ahmad Abdul Wakeel, and Saurabh Santhosh currently have no projects under folder 499446588003 (Saurabh appears as TL in services where Josef Pokorny is SO). The dashboard footer must state this.
 
@@ -215,16 +215,21 @@ with open('/Users/demahato/CoS/projects/work/dnd-cost/Service Portal info.csv') 
 svc_lookup = {r['Service'].lower().strip(): r for r in svc_rows}
 
 def clean(name):
-    return re.sub(r'\s*\(Inactive\)|\s*\(Unconfirmed\)', '', name).strip()
+    return re.sub(r'\s*\(Inactive\)|\s*\(Unconfirmed\)', '', name or '').strip()
+
+def is_active(name):
+    """Returns True only if the name is non-empty AND not marked Inactive/Unconfirmed."""
+    return bool(name) and '(Inactive)' not in name and '(Unconfirmed)' not in name
 
 def effective_owner(row):
-    """Returns (owner_name, role) using SO → TL → PO priority."""
-    so = clean(row.get('Service Owner', ''))
-    tl = clean(row.get('Tech Lead', ''))
-    po = clean(row.get('Product Owner', ''))
-    if so: return so, 'SO'
-    if tl: return tl, 'TL'
-    if po: return po, 'PO'
+    """Returns (owner_name, role) using SO → TL → PO priority.
+    Inactive/Unconfirmed entries are skipped entirely — falls through to next active person."""
+    so = row.get('Service Owner', '')
+    tl = row.get('Tech Lead', '')
+    po = row.get('Product Owner', '')
+    if is_active(so): return clean(so), 'SO'
+    if is_active(tl): return clean(tl), 'TL'
+    if is_active(po): return clean(po), 'PO'
     return '', ''
 
 # Additional manual resolutions for labels that differ slightly from portal names
