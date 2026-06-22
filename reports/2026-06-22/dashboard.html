@@ -336,8 +336,8 @@ function filterProjects(){
   document.querySelectorAll('.project-row').forEach(row=>{
     const show=!q||row.getAttribute('data-name').includes(q);
     row.style.display=show?'':'none';
-    const btn=row.querySelector('[onclick]');
-    if(btn){const id=(btn.getAttribute('onclick').match(/'([^']+)'/')||[])[1];if(id){const d=document.getElementById('detail-'+id);if(d&&!show)d.style.display='none';}}
+    const detail=row.nextElementSibling;
+    if(detail&&detail.classList.contains('svc-detail')&&!show) detail.style.display='none';
   });
 }
 </script>
