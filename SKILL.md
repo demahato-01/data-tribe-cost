@@ -486,7 +486,49 @@ Explicitly state which owners have no projects under this folder (from the compu
 
 ---
 
-## Step 5 — Open the dashboard
+## Step 5 — Push report to GitHub
+
+Repo: `git@github.com:demahato-01/data-tribe-cost.git`
+Local clone: `/tmp/data-tribe-cost`
+
+```bash
+# Clone if not present, otherwise pull latest
+if [ -d /tmp/data-tribe-cost/.git ]; then
+  git -C /tmp/data-tribe-cost pull origin main
+else
+  git clone git@github.com:demahato-01/data-tribe-cost.git /tmp/data-tribe-cost
+fi
+
+# Create dated folder and copy report
+REPORT_DATE=$(date +%Y-%m-%d)
+mkdir -p /tmp/data-tribe-cost/reports/$REPORT_DATE
+cp /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html /tmp/data-tribe-cost/reports/$REPORT_DATE/dashboard.html
+cp /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html /tmp/data-tribe-cost/dashboard.html
+
+# Commit and push
+cd /tmp/data-tribe-cost
+git add reports/$REPORT_DATE/dashboard.html dashboard.html
+git -c user.name="Deepak Mahato" -c user.email="demahato@groupon.com" \
+  commit -m "Add cost report $REPORT_DATE"
+git push origin main
+```
+
+**Folder structure in repo:**
+```
+reports/
+  2026-06-22/dashboard.html   ← historical snapshot
+  2026-06-29/dashboard.html   ← next run adds a new folder
+dashboard.html                ← always the latest run
+Service Portal info.csv
+SKILL.md
+README.md
+```
+
+Each run creates `reports/YYYY-MM-DD/dashboard.html` (the dated snapshot) and overwrites the root `dashboard.html` (the "latest" link). If the same date is run twice, the second run overwrites that date's folder — this is intentional.
+
+---
+
+## Step 6 — Open the dashboard
 
 ```bash
 open /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html
@@ -494,7 +536,7 @@ open /Users/demahato/CoS/projects/work/dnd-cost/dashboard.html
 
 ---
 
-## Step 6 — Report back
+## Step 7 — Report back
 
 - Generation timestamp
 - Total MTD spend + projected
