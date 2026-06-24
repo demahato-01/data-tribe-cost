@@ -1,65 +1,78 @@
-# DnD Team GCP Cost Dashboard
+# GCP Cost Dashboards
 
-Filtered cost dashboard for GCP projects under folder `499446588003` owned by the DnD team.
+Self-contained HTML dashboards for GCP cost visibility at Groupon. No server needed — open in any browser.
 
-## Output
+**Billing source:** `prj-grpn-seed-terraform-66e7.grpn_cloudability_billing.gcp_billing_export_resource_v1_01F2E1_BA7EDD_9C9EB7`
 
-`dashboard.html` — open in any browser, no server needed.
+**Ownership lookup:** `Service Portal info.csv` — active services only (Decommed/Sunset excluded), columns: Service, Product Owner, Service Owner, Tech Lead, Team Email.
 
-## Data Source
+---
 
-| Field | Value |
-|---|---|
-| Project | `prj-grpn-seed-terraform-66e7` |
-| Dataset | `grpn_cloudability_billing` |
-| Table | `gcp_billing_export_resource_v1_01F2E1_BA7EDD_9C9EB7` |
-| Folder filter | `project.ancestry_numbers LIKE "%499446588003%"` |
+## Dashboards
 
-## Owner Filter
+### 1. DnD Team Cost Dashboard
 
-Dashboard shows only projects whose effective owner (Service Owner → Tech Lead → Product Owner) is one of:
+**Scope:** GCP projects under folder `499446588003` (DnD team only), all GCP services.
 
-| Owner | Color |
-|---|---|
-| Aaditya Raj | purple |
-| Pratyush Raizada | blue |
-| Ravikumar Padala | green |
-| Audrius Sadauskas | orange |
-| Ahmad Abdul Wakeel | red |
-| Josef Pokorny | teal |
-| Saurabh Santhosh | pink |
-| Deepak Mahato | gold |
+**Live dashboard:** `dashboard.html` (root)
 
-**Note:** Audrius Sadauskas, Ahmad Abdul Wakeel, and Saurabh Santhosh currently have no projects under this folder.
+**Regenerate:** Run `/dnd-cost` in Claude Code.
 
-## Dashboard Sections
+#### Sections
+- **KPI Cards** — MTD spend, projected full month, last month, prior month, MoM trend, project count, owner count
+- **GCP Services Breakdown** — donut + bar charts, monthly trend line, full SKU table
+- **Project Table** — all projects with MTD, prior months, trend, service owner, team email, expandable GCP services per project
 
-### KPI Cards
-- Current MTD spend + projected full-month estimate
-- Last full month + month prior
-- MoM trend (projected vs last full month)
-- Team project count
-- Owners with active projects
+#### Owner Filter
+Only projects whose effective owner (Service Owner → Tech Lead → Product Owner) is a DnD team member are shown.
 
-### GCP Services Breakdown
-- Donut chart — share of spend by GCP service (top 8)
-- Horizontal bar chart — top 8 GCP services by MTD cost
-- Line chart — monthly trend Jan–current for top 5 GCP services
-- Full GCP service table — all services with MTD, prior months, % of total, project count
+---
 
-### Project Table
-Columns: # | Project | MTD | Mar | Feb | Jan | Trend vs Mar | Service Name | Service Owner | Team Email | GCP Services
+### 2. BigQuery Cost Dashboard
 
-- **Service Name** — App Service label from GCP project tag (e.g. `janus`, `megatron-gcp`) matched to Service Portal
-- **Service Owner** — Color-coded owner badge (matching owner's color) + role badge (SO/TL/PO)
-- **Team Email** — Clickable mailto link
-- **GCP Services** — App Service badge + expandable `▶ N GCP services` button showing per-project infrastructure breakdown
-- Filter by project name
+**Scope:** All Groupon GCP projects (org-wide), BigQuery service only (`service.description = 'BigQuery'`).
 
-> Note: "Service Name" (App Service / portal label) and "GCP Service" (infrastructure like Compute Engine) are different concepts and are kept separate throughout the dashboard.
+**Live dashboard:** `bigquery-cost/dashboard.html`
 
-## Regenerating
+**Regenerate:** Run `/bq-cost` in Claude Code.
 
-Run `/dnd-cost` in Claude Code to refresh with the latest billing data.
+#### Sections
+- **KPI Cards** — MTD BigQuery spend, projected full month, last month, prior month, MoM trend, project count, owner count
+- **Week-over-Week** — W1/W2/W3 totals, grouped bar chart by owner, top movers table
+- **BigQuery SKU Breakdown** — donut + bar charts, monthly trend, full SKU table (Analysis, Active/Long Term Storage, etc.)
+- **Cost by Service Owner** — bar chart + table with MTD, prior months, MoM trend, project count
+- **Project Table** — all 144 projects, searchable, expandable SKU rows per project
 
-The skill runs 6 BigQuery queries in parallel, filters to team-owned projects, processes the data with Python, and rewrites `dashboard.html`.
+---
+
+## Dated Snapshots
+
+Every dashboard regeneration auto-saves a dated copy:
+
+```
+reports/YYYY-MM-DD/dashboard.html          ← DnD dashboard snapshots
+bigquery-cost/reports/YYYY-MM-DD/dashboard.html  ← BigQuery dashboard snapshots
+```
+
+---
+
+## Ownership Resolution
+
+For each GCP project:
+1. Read the `service` label from the billing export
+2. Match it to a row in `Service Portal info.csv`
+3. Pick the first active owner in priority order: **Service Owner → Tech Lead → Product Owner**
+4. Names containing `(Inactive)` or `(Unconfirmed)` are skipped
+
+Services with `Lifecycle = Decommed` or `Sunset` are excluded from the CSV.
+
+---
+
+## Updating Service Portal CSV
+
+Replace `Service Portal info.csv` with a fresh export from [services.groupondev.com](https://services.groupondev.com):
+1. Export the full CSV from the Service Portal
+2. Keep only active services (filter out `Lifecycle = Decommed` and `Sunset`)
+3. Slim to columns: `Service, Product Owner, Service Owner, Tech Lead, Team Email`
+4. Overwrite `Service Portal info.csv` at the repo root
+5. Re-run the relevant dashboard skill to pick up the new ownership data
