@@ -2,14 +2,55 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=dashboard.html">
-<title>DnD GCP Cost Dashboard</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Groupon Cost Dashboards</title>
 <style>
-  body { background:#0f1117; color:#e2e8f0; font-family:-apple-system,sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
-  a { color:#4299e1; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0e17;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.wrap{max-width:640px;width:100%;padding:32px 20px}
+h1{font-size:22px;font-weight:700;color:#f7fafc;margin-bottom:6px}
+.sub{color:#4a5568;font-size:13px;margin-bottom:32px}
+.card{background:#131825;border:1px solid #1e2a3a;border-radius:12px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;gap:18px;text-decoration:none;transition:border-color .15s}
+.card:hover{border-color:#4299e1}
+.icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0}
+.card-body{flex:1}
+.card-title{font-size:15px;font-weight:600;color:#f7fafc;margin-bottom:3px}
+.card-desc{font-size:12px;color:#718096;line-height:1.5}
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+.arrow{color:#4a5568;font-size:18px}
 </style>
 </head>
 <body>
-  <p>Redirecting to <a href="dashboard.html">latest dashboard</a>…</p>
+<div class="wrap">
+  <h1>Cost Dashboards</h1>
+  <div class="sub">Groupon infrastructure cost visibility — open in any browser, no server needed</div>
+
+  <a class="card" href="aws-cost/dashboard.html">
+    <div class="icon" style="background:#f9030322;color:#f90">AWS</div>
+    <div class="card-body">
+      <div class="card-title">AWS Cost Monitor <span class="badge" style="background:#f9030322;color:#f90">AWS</span></div>
+      <div class="card-desc">grpn-dnd-prod · grpn-teradata-prod — week-over-week tracking, per-service breakdown, monthly trends</div>
+    </div>
+    <div class="arrow">›</div>
+  </a>
+
+  <a class="card" href="bigquery-cost/dashboard.html">
+    <div class="icon" style="background:#4299e122;color:#4299e1">BQ</div>
+    <div class="card-body">
+      <div class="card-title">BigQuery Cost Dashboard <span class="badge" style="background:#4299e122;color:#4299e1">GCP</span></div>
+      <div class="card-desc">All Groupon GCP projects — BigQuery spend by project and service owner, WoW and MoM trends</div>
+    </div>
+    <div class="arrow">›</div>
+  </a>
+
+  <a class="card" href="dashboard.html">
+    <div class="icon" style="background:#48bb7822;color:#48bb78">DnD</div>
+    <div class="card-body">
+      <div class="card-title">DnD GCP Cost Dashboard <span class="badge" style="background:#48bb7822;color:#48bb78">GCP</span></div>
+      <div class="card-desc">GCP projects under folder 499446588003 — DnD team spend filtered by service owner</div>
+    </div>
+    <div class="arrow">›</div>
+  </a>
+</div>
 </body>
 </html>

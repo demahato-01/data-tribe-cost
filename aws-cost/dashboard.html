@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AWS Cost Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0b0e17;color:#e2e8f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px}
+.container{max-width:1600px;margin:0 auto;padding:20px}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-start;background:#131825;border:1px solid #1e2a3a;border-radius:12px;padding:20px 24px;margin-bottom:20px;gap:20px}
+.header-title{font-size:22px;font-weight:700;color:#f7fafc;display:flex;align-items:center;gap:10px}
+.aws-pill{background:#f90;color:#000;font-weight:800;font-size:11px;padding:3px 8px;border-radius:4px}
+.header-meta{color:#4a5568;font-size:12px;margin-top:5px}
+.combined-strip{display:flex;gap:28px;flex-wrap:wrap}
+.cs-item{text-align:right}
+.cs-label{display:block;color:#4a5568;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.cs-val{display:block;font-size:20px;font-weight:700;font-family:monospace;color:#f7fafc}
+.cs-sub{display:block;font-size:11px;color:#718096;margin-top:1px}
+
+/* Account cards */
+.acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.acct-card{background:#131825;border:2px solid;border-radius:12px;padding:20px}
+.acct-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.acct-name{font-size:16px;font-weight:700;margin-bottom:2px}
+.acct-id{font-size:11px;color:#4a5568;font-family:monospace}
+.acct-svc-count{text-align:right}
+.acct-svc-num{font-size:24px;font-weight:700;color:#f7fafc;font-family:monospace}
+.acct-svc-lbl{font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:.5px}
+.acct-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.acct-stat{background:#0b0e17;border-radius:8px;padding:12px}
+.acct-stat-lbl{color:#718096;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.acct-stat-val{font-size:16px;font-weight:700;font-family:monospace;color:#f7fafc}
+.acct-stat-sub{font-size:11px;color:#718096;margin-top:2px}
+.wow-strip{background:#0b0e17;border-radius:8px;padding:14px}
+.wow-strip-title{color:#718096;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.wow-weeks{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.wow-week{text-align:center}
+.wow-week-lbl{font-size:10px;color:#4a5568;margin-bottom:3px}
+.wow-week-val{font-size:15px;font-weight:700;font-family:monospace;color:#f7fafc}
+.wow-week-chg{font-size:11px;font-weight:700;margin-top:2px}
+.wow-arrow{font-size:11px;color:#4a5568;align-self:center;text-align:center;padding-top:14px}
+
+/* Section */
+.section{background:#131825;border:1px solid #1e2a3a;border-radius:12px;padding:20px;margin-bottom:20px}
+h2{font-size:17px;font-weight:600;color:#e2e8f0;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+h3{font-size:13px;font-weight:600;color:#a0aec0;margin-bottom:10px}
+.tag{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:2px 8px;border-radius:4px;margin-left:4px}
+
+/* WoW summary table */
+.wow-summary{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
+.wow-summary th{background:#0b0e17;color:#718096;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;text-align:right;border-bottom:1px solid #1e2a3a}
+.wow-summary th:first-child{text-align:left}
+.wow-summary td{padding:12px 14px;border-bottom:1px solid #1a2030;text-align:right;font-family:monospace}
+.wow-summary td:first-child{text-align:left;font-family:-apple-system,sans-serif}
+.wow-summary tr:last-child td{border-bottom:none;font-weight:700;color:#f7fafc;background:#0b0e1766}
+.wow-summary tr:hover td{background:#1e2a3a44}
+
+/* Breakdown grid */
+.breakdown-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.breakdown-card{background:#131825;border:2px solid;border-radius:12px;padding:18px}
+.breakdown-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.breakdown-sub{font-size:11px;color:#4a5568;margin-bottom:14px}
+
+/* Service tables */
+.svc-table{width:100%;border-collapse:collapse;font-size:12px}
+.svc-table th{background:#0b0e17;color:#718096;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:right;border-bottom:1px solid #1e2a3a;cursor:pointer;white-space:nowrap}
+.svc-table th:first-child{text-align:left}
+.svc-table th:hover{color:#e2e8f0}
+.svc-table td{padding:8px 10px;border-bottom:1px solid #1a2030;text-align:right;vertical-align:middle}
+.svc-table td:first-child{text-align:left}
+.svc-table tr:hover td{background:#1e2a3a44}
+.svc-name{font-size:11px;color:#e2e8f0;white-space:nowrap}
+.svc-bar-wrap{height:2px;background:#1e2a3a;border-radius:1px;margin-top:3px;width:100%;min-width:60px}
+.svc-bar{height:2px;border-radius:1px}
+.mono{font-family:monospace;color:#cbd5e0}
+.dim{color:#4a5568}
+.up{color:#fc8181;font-weight:700}
+.dn{color:#68d391;font-weight:700}
+.neutral{color:#718096}
+
+/* Charts */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g2-35{display:grid;grid-template-columns:3fr 2fr;gap:16px}
+.cbox{background:#0b0e17;border:1px solid #1e2a3a;border-radius:8px;padding:16px}
+.cbox canvas{max-height:260px}
+
+/* Monthly */
+.monthly-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <div>
+    <div class="header-title">AWS Cost Monitor <span class="aws-pill">AWS</span></div>
+    <div class="header-meta" id="header-meta"></div>
+  </div>
+  <div class="combined-strip" id="combined-strip"></div>
+</div>
+
+<!-- Account Cards -->
+<div class="acct-grid" id="acct-cards"></div>
+
+<!-- WoW Section -->
+<div class="section">
+  <h2>Week-over-Week <span class="tag" id="wow-tag" style="color:#a0aec0;background:#1e2a3a"></span></h2>
+  <table class="wow-summary" id="wow-table"></table>
+  <div class="g2-35">
+    <div class="cbox"><h3>Weekly Spend by Account</h3><canvas id="wowChart"></canvas></div>
+    <div>
+      <h3 style="margin-bottom:12px">Biggest Cost Movers W2 → W3</h3>
+      <div class="g2" id="movers-grid" style="gap:12px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Per-account service breakdown -->
+<div class="breakdown-grid" id="breakdown"></div>
+
+<!-- Monthly trends -->
+<div class="section">
+  <h2>Monthly Trends</h2>
+  <div class="g2">
+    <div class="cbox"><h3>Total Spend by Account (Last 4 Months)</h3><canvas id="monthlyChart"></canvas></div>
+    <div class="cbox"><h3>Top 5 Services per Account — MTD</h3><canvas id="topSvcChart"></canvas></div>
+  </div>
+</div>
+
+</div>
+<script>
+const D = {"generatedDate":"2026-06-23","currentMonthLabel":"June 2026","dayOfMonth":23,"daysInMonth":30,"months":["Mar","Apr","May","Jun"],"lastMonthLabel":"May","prevMonthLabel":"Apr","combined":{"mtd":163490.79,"projected":213248.86,"last_month":199787.94,"prev_month":223392.48,"mom_pct":6.7,"monthly":[197990.63,223392.48,199787.94,163490.79],"w1t":94335.61,"w2t":32461.64,"w3t":32124.33,"w2w3_delta":-337.31,"w2w3_pct":-1.0,"w1w2_pct":-65.6},"accounts":[{"profile":"dnd-prod","id":"458721635755","name":"grpn-dnd-prod","color":"#ed8936","mtd":40596.71,"projected":52952.23,"last_month":57597.35,"prev_month":81991.99,"mom_pct":-8.1,"monthly":[58739.88,81991.99,57597.35,40596.71],"w1t":12536.71,"w2t":13210.63,"w3t":12991.34,"w2w3_delta":-219.29,"w2w3_pct":-1.7,"w1w2_pct":5.4,"services":[{"name":"EC2 - Other","mtd":18401.97,"monthly":[33779.17,45600.03,30469.06,18401.97],"w1":5852.53,"w2":5858.22,"w3":5854.26,"delta":-3.96,"delta_pct":-0.1},{"name":"Amazon Virtual Private Cloud","mtd":9758.0,"monthly":[220.24,216.74,5641.48,9758.0],"w1":2907.72,"w2":3254.0,"w3":3146.11,"delta":-107.89,"delta_pct":-3.3},{"name":"AWS Direct Connect","mtd":9571.56,"monthly":[0.27,0.28,5391.4,9571.56],"w1":2848.67,"w2":3194.49,"w3":3086.71,"delta":-107.78,"delta_pct":-3.4},{"name":"Amazon Route 53","mtd":1056.5,"monthly":[1488.28,1441.57,1488.43,1056.5],"w1":336.43,"w2":336.03,"w3":336.03,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Elastic Compute Cloud - Compute","mtd":886.93,"monthly":[22000.99,33481.85,13353.0,886.93],"w1":299.41,"w2":274.18,"w3":274.18,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon Simple Storage Service","mtd":631.99,"monthly":[851.69,853.99,853.77,631.99],"w1":202.54,"w2":200.4,"w3":200.41,"delta":0.01,"delta_pct":0.0},{"name":"AmazonCloudWatch","mtd":147.58,"monthly":[202.32,202.72,201.94,147.58],"w1":46.0,"w2":47.41,"w3":47.4,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS Key Management Service","mtd":38.17,"monthly":[51.8,51.98,51.81,38.17],"w1":12.14,"w2":12.15,"w3":12.15,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Elastic Load Balancing","mtd":25.08,"monthly":[35.34,34.2,35.34,25.08],"w1":7.98,"w2":7.98,"w3":7.98,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon Elastic File System","mtd":23.78,"monthly":[32.43,32.43,32.43,23.78],"w1":7.57,"w2":7.57,"w3":7.57,"delta":0.0,"delta_pct":0.0},{"name":"Amazon EC2 Container Registry (ECR)","mtd":13.91,"monthly":[18.97,18.97,18.97,13.91],"w1":4.43,"w2":4.43,"w3":4.43,"delta":0.0,"delta_pct":0.0},{"name":"Amazon DynamoDB","mtd":11.69,"monthly":[18.29,17.4,18.12,11.69],"w1":1.92,"w2":4.3,"w3":4.76,"delta":0.46,"delta_pct":10.7},{"name":"AWS Secrets Manager","mtd":9.12,"monthly":[12.44,12.44,12.44,9.12],"w1":2.9,"w2":2.9,"w3":2.9,"delta":0.0,"delta_pct":0.0},{"name":"AWS Config","mtd":8.81,"monthly":[11.34,11.46,12.81,8.81],"w1":2.87,"w2":2.85,"w3":2.72,"delta":-0.12,"delta_pct":-4.2},{"name":"AWS Lambda","mtd":8.15,"monthly":[11.54,11.16,11.54,8.15],"w1":2.5,"w2":2.64,"w3":2.64,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Relational Database Service","mtd":2.74,"monthly":[3.8,3.8,3.8,2.74],"w1":0.85,"w2":0.89,"w3":0.89,"delta":0.0,"delta_pct":0.0},{"name":"AWS CloudTrail","mtd":0.61,"monthly":[0.82,0.81,0.86,0.61],"w1":0.2,"w2":0.19,"w3":0.19,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon API Gateway","mtd":0.11,"monthly":[0.16,0.15,0.16,0.11],"w1":0.04,"w2":0.04,"w3":0.04,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon Simple Notification Service","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":0.0},{"name":"AWS CloudShell","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Amazon Simple Queue Service","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Simple Workflow Service","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Glacier","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":0.0},{"name":"AWS Step Functions","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS CloudFormation","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"AWS Glue","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Tax","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null}],"movers":[{"name":"Amazon Virtual Private Cloud","mtd":9758.0,"monthly":[220.24,216.74,5641.48,9758.0],"w1":2907.72,"w2":3254.0,"w3":3146.11,"delta":-107.89,"delta_pct":-3.3},{"name":"AWS Direct Connect","mtd":9571.56,"monthly":[0.27,0.28,5391.4,9571.56],"w1":2848.67,"w2":3194.49,"w3":3086.71,"delta":-107.78,"delta_pct":-3.4},{"name":"EC2 - Other","mtd":18401.97,"monthly":[33779.17,45600.03,30469.06,18401.97],"w1":5852.53,"w2":5858.22,"w3":5854.26,"delta":-3.96,"delta_pct":-0.1},{"name":"Amazon Simple Storage Service","mtd":631.99,"monthly":[851.69,853.99,853.77,631.99],"w1":202.54,"w2":200.4,"w3":200.41,"delta":0.01,"delta_pct":0.0},{"name":"Amazon Route 53","mtd":1056.5,"monthly":[1488.28,1441.57,1488.43,1056.5],"w1":336.43,"w2":336.03,"w3":336.03,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Elastic Compute Cloud - Compute","mtd":886.93,"monthly":[22000.99,33481.85,13353.0,886.93],"w1":299.41,"w2":274.18,"w3":274.18,"delta":-0.0,"delta_pct":-0.0},{"name":"AmazonCloudWatch","mtd":147.58,"monthly":[202.32,202.72,201.94,147.58],"w1":46.0,"w2":47.41,"w3":47.4,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS Key Management Service","mtd":38.17,"monthly":[51.8,51.98,51.81,38.17],"w1":12.14,"w2":12.15,"w3":12.15,"delta":0.0,"delta_pct":0.0},{"name":"Amazon Elastic Load Balancing","mtd":25.08,"monthly":[35.34,34.2,35.34,25.08],"w1":7.98,"w2":7.98,"w3":7.98,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon Elastic File System","mtd":23.78,"monthly":[32.43,32.43,32.43,23.78],"w1":7.57,"w2":7.57,"w3":7.57,"delta":0.0,"delta_pct":0.0}],"service_count":18},{"profile":"teradata-prod","id":"851725417994","name":"grpn-teradata-prod","color":"#4299e1","mtd":122894.08,"projected":160296.63,"last_month":142190.59,"prev_month":141400.49,"mom_pct":12.7,"monthly":[139250.75,141400.49,142190.59,122894.08],"w1t":81798.9,"w2t":19251.01,"w3t":19132.99,"w2w3_delta":-118.02,"w2w3_pct":-0.6,"w1w2_pct":-76.5,"services":[{"name":"Amazon Elastic Compute Cloud - Compute","mtd":63807.25,"monthly":[66230.67,64118.52,66256.91,63807.25],"w1":63215.9,"w2":275.96,"w3":275.97,"delta":0.01,"delta_pct":0.0},{"name":"EC2 - Other","mtd":20084.23,"monthly":[27362.24,27384.91,27383.85,20084.23],"w1":6390.08,"w2":6390.42,"w3":6390.76,"delta":0.34,"delta_pct":0.0},{"name":"Amazon Virtual Private Cloud","mtd":19007.1,"monthly":[20032.65,24208.19,21756.15,19007.1],"w1":5849.84,"w2":6225.09,"w3":6072.94,"delta":-152.15,"delta_pct":-2.4},{"name":"Amazon Simple Storage Service","mtd":9205.05,"monthly":[10459.73,11058.6,11777.16,9205.05],"w1":2916.22,"w2":2916.9,"w3":2954.69,"delta":37.79,"delta_pct":1.3},{"name":"AWS Direct Connect","mtd":9147.6,"monthly":[12975.34,12479.38,12771.08,9147.6],"w1":2915.62,"w2":2918.52,"w3":2904.1,"delta":-14.42,"delta_pct":-0.5},{"name":"AWS CloudTrail","mtd":886.8,"monthly":[1179.01,1152.48,1204.38,886.8],"w1":273.28,"w2":282.26,"w3":291.42,"delta":9.16,"delta_pct":3.2},{"name":"AmazonCloudWatch","mtd":366.29,"monthly":[482.07,485.81,505.14,366.29],"w1":115.92,"w2":117.3,"w3":116.58,"delta":-0.72,"delta_pct":-0.6},{"name":"Amazon GuardDuty","mtd":243.11,"monthly":[330.56,314.95,335.06,243.11],"w1":76.72,"w2":77.76,"w3":78.82,"delta":1.06,"delta_pct":1.4},{"name":"AWS Secrets Manager","mtd":80.76,"monthly":[105.2,104.72,108.68,80.76],"w1":24.85,"w2":25.67,"w3":26.46,"delta":0.79,"delta_pct":3.1},{"name":"Amazon Elastic Load Balancing","mtd":45.13,"monthly":[64.28,64.93,63.52,45.13],"w1":14.4,"w2":14.34,"w3":14.34,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS Lambda","mtd":11.55,"monthly":[15.44,15.32,15.78,11.55],"w1":3.39,"w2":3.74,"w3":3.86,"delta":0.12,"delta_pct":3.2},{"name":"AWS WAF","mtd":4.72,"monthly":[6.45,6.43,6.45,4.72],"w1":1.5,"w2":1.5,"w3":1.5,"delta":-0.0,"delta_pct":-0.0},{"name":"Amazon DynamoDB","mtd":3.74,"monthly":[5.43,5.24,5.43,3.74],"w1":0.94,"w2":1.31,"w3":1.31,"delta":0.0,"delta_pct":0.0},{"name":"AWS Key Management Service","mtd":0.73,"monthly":[0.99,1.0,0.99,0.73],"w1":0.23,"w2":0.23,"w3":0.23,"delta":0.0,"delta_pct":0.0},{"name":"AWS Systems Manager","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":0.0},{"name":"AWS Step Functions","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS CloudShell","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Amazon Simple Notification Service","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":-0.0,"delta_pct":-0.0},{"name":"AWS CloudFormation","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"AWS Glue","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Amazon API Gateway","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Amazon Elastic Container Service","mtd":0.0,"monthly":[0.68,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Amazon Simple Queue Service","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null},{"name":"Tax","mtd":0.0,"monthly":[0.0,0.0,0.0,0.0],"w1":0.0,"w2":0.0,"w3":0.0,"delta":0.0,"delta_pct":null}],"movers":[{"name":"Amazon Virtual Private Cloud","mtd":19007.1,"monthly":[20032.65,24208.19,21756.15,19007.1],"w1":5849.84,"w2":6225.09,"w3":6072.94,"delta":-152.15,"delta_pct":-2.4},{"name":"Amazon Simple Storage Service","mtd":9205.05,"monthly":[10459.73,11058.6,11777.16,9205.05],"w1":2916.22,"w2":2916.9,"w3":2954.69,"delta":37.79,"delta_pct":1.3},{"name":"AWS Direct Connect","mtd":9147.6,"monthly":[12975.34,12479.38,12771.08,9147.6],"w1":2915.62,"w2":2918.52,"w3":2904.1,"delta":-14.42,"delta_pct":-0.5},{"name":"AWS CloudTrail","mtd":886.8,"monthly":[1179.01,1152.48,1204.38,886.8],"w1":273.28,"w2":282.26,"w3":291.42,"delta":9.16,"delta_pct":3.2},{"name":"Amazon GuardDuty","mtd":243.11,"monthly":[330.56,314.95,335.06,243.11],"w1":76.72,"w2":77.76,"w3":78.82,"delta":1.06,"delta_pct":1.4},{"name":"AWS Secrets Manager","mtd":80.76,"monthly":[105.2,104.72,108.68,80.76],"w1":24.85,"w2":25.67,"w3":26.46,"delta":0.79,"delta_pct":3.1},{"name":"AmazonCloudWatch","mtd":366.29,"monthly":[482.07,485.81,505.14,366.29],"w1":115.92,"w2":117.3,"w3":116.58,"delta":-0.72,"delta_pct":-0.6},{"name":"EC2 - Other","mtd":20084.23,"monthly":[27362.24,27384.91,27383.85,20084.23],"w1":6390.08,"w2":6390.42,"w3":6390.76,"delta":0.34,"delta_pct":0.0},{"name":"Amazon Elastic Compute Cloud - Compute","mtd":63807.25,"monthly":[66230.67,64118.52,66256.91,63807.25],"w1":63215.9,"w2":275.96,"w3":275.97,"delta":0.01,"delta_pct":0.0},{"name":"Amazon Elastic Load Balancing","mtd":45.13,"monthly":[64.28,64.93,63.52,45.13],"w1":14.4,"w2":14.34,"w3":14.34,"delta":-0.0,"delta_pct":-0.0}],"service_count":14}]};
+
+function fmt(v,d){d=d===undefined?2:d;return(v||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fmtW(v){return fmt(v,0);}
+
+function deltaHtml(delta,pct,size){
+  if(delta===null||delta===undefined)return '<span class="neutral">—</span>';
+  var up=delta>0;
+  var cls=up?'up':'dn';
+  var arrow=up?'▲':'▼';
+  var s=size==='sm'?'font-size:11px':'font-size:13px';
+  var p=pct!==null&&pct!==undefined?' <span style="opacity:.65">('+Math.abs(pct)+'%)</span>':'';
+  return '<span class="'+cls+'" style="'+s+'">'+arrow+' $'+fmt(Math.abs(delta))+p+'</span>';
+}
+
+function momHtml(pct){
+  if(pct===null||pct===undefined)return '<span class="neutral">—</span>';
+  var up=pct>0,cls=up?'up':'dn';
+  return '<span class="'+cls+'">'+(up?'▲':'▼')+' '+Math.abs(pct)+'%</span>';
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+var C=D.combined;
+document.getElementById('header-meta').textContent=
+  D.accounts.map(function(a){return a.name+' ('+a.id+')';}).join(' · ')+
+  ' · Generated '+D.generatedDate+' · MTD = '+D.currentMonthLabel+' 1–'+D.dayOfMonth;
+
+document.getElementById('combined-strip').innerHTML=
+  '<div class="cs-item"><span class="cs-label">Combined MTD</span><span class="cs-val">$'+fmt(C.mtd)+'</span><span class="cs-sub">Projected $'+fmt(C.projected)+'</span></div>'+
+  '<div class="cs-item"><span class="cs-label">vs '+D.lastMonthLabel+'</span><span class="cs-val">'+momHtml(C.mom_pct)+'</span><span class="cs-sub">Last: $'+fmt(C.last_month)+'</span></div>'+
+  '<div class="cs-item"><span class="cs-label">W2 → W3</span><span class="cs-val">'+deltaHtml(C.w2w3_delta,C.w2w3_pct)+'</span><span class="cs-sub">W3: $'+fmt(C.w3t)+'</span></div>'+
+  '<div class="cs-item"><span class="cs-label">W1 → W2</span><span class="cs-val">'+deltaHtml(C.w2t-C.w1t,C.w1w2_pct)+'</span><span class="cs-sub">W2: $'+fmt(C.w2t)+'</span></div>';
+
+// ── Account cards ────────────────────────────────────────────────────────────
+document.getElementById('acct-cards').innerHTML=D.accounts.map(function(a){
+  var wchg1=a.w1w2_pct!==0?deltaHtml(a.w2t-a.w1t,a.w1w2_pct,'sm'):'<span class="neutral">—</span>';
+  var wchg2=deltaHtml(a.w2w3_delta,a.w2w3_pct,'sm');
+  return '<div class="acct-card" style="border-color:'+a.color+'44">'+
+    '<div class="acct-header">'+
+      '<div><div class="acct-name" style="color:'+a.color+'">'+a.name+'</div><div class="acct-id">'+a.id+'</div></div>'+
+      '<div class="acct-svc-count"><div class="acct-svc-num">'+a.service_count+'</div><div class="acct-svc-lbl">services</div></div>'+
+    '</div>'+
+    '<div class="acct-stats">'+
+      '<div class="acct-stat"><div class="acct-stat-lbl">MTD Spend</div><div class="acct-stat-val">$'+fmt(a.mtd)+'</div><div class="acct-stat-sub">Proj $'+fmt(a.projected)+'</div></div>'+
+      '<div class="acct-stat"><div class="acct-stat-lbl">'+D.lastMonthLabel+' (Full)</div><div class="acct-stat-val">$'+fmt(a.last_month)+'</div><div class="acct-stat-sub">MoM '+momHtml(a.mom_pct)+'</div></div>'+
+      '<div class="acct-stat"><div class="acct-stat-lbl">'+D.prevMonthLabel+'</div><div class="acct-stat-val">$'+fmt(a.prev_month)+'</div><div class="acct-stat-sub" style="color:#4a5568">prior month</div></div>'+
+    '</div>'+
+    '<div class="wow-strip">'+
+      '<div class="wow-strip-title">Week-over-Week — '+D.currentMonthLabel+'</div>'+
+      '<div class="wow-weeks">'+
+        '<div class="wow-week"><div class="wow-week-lbl">W1 · Jun 1–7</div><div class="wow-week-val">$'+fmt(a.w1t)+'</div><div class="wow-week-chg neutral">baseline</div></div>'+
+        '<div class="wow-week"><div class="wow-week-lbl">W2 · Jun 8–14</div><div class="wow-week-val">$'+fmt(a.w2t)+'</div><div class="wow-week-chg">'+wchg1+'</div></div>'+
+        '<div class="wow-week"><div class="wow-week-lbl">W3 · Jun 15–21</div><div class="wow-week-val">$'+fmt(a.w3t)+'</div><div class="wow-week-chg">'+wchg2+'</div></div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}).join('');
+
+// ── WoW summary table ────────────────────────────────────────────────────────
+var mon=D.currentMonthLabel.split(' ')[0].slice(0,3);
+document.getElementById('wow-tag').textContent=D.currentMonthLabel+' — Jun 1–21';
+var wrows=D.accounts.map(function(a){
+  return '<tr>'+
+    '<td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:'+a.color+';margin-right:8px"></span>'+a.name+'</td>'+
+    '<td class="mono">$'+fmt(a.w1t)+'</td>'+
+    '<td class="mono">$'+fmt(a.w2t)+'</td>'+
+    '<td class="mono">'+deltaHtml(a.w2t-a.w1t,a.w1w2_pct,'sm')+'</td>'+
+    '<td class="mono">$'+fmt(a.w3t)+'</td>'+
+    '<td class="mono">'+deltaHtml(a.w2w3_delta,a.w2w3_pct,'sm')+'</td>'+
+  '</tr>';
+}).join('');
+var ctot='<tr>'+
+  '<td style="color:#a0aec0;font-family:sans-serif"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#555;margin-right:8px"></span>Combined</td>'+
+  '<td class="mono">$'+fmt(C.w1t)+'</td>'+
+  '<td class="mono">$'+fmt(C.w2t)+'</td>'+
+  '<td class="mono">'+deltaHtml(C.w2t-C.w1t,C.w1w2_pct,'sm')+'</td>'+
+  '<td class="mono">$'+fmt(C.w3t)+'</td>'+
+  '<td class="mono">'+deltaHtml(C.w2w3_delta,C.w2w3_pct,'sm')+'</td>'+
+'</tr>';
+document.getElementById('wow-table').innerHTML=
+  '<thead><tr>'+
+    '<th style="text-align:left">Account</th>'+
+    '<th>W1 ('+mon+' 1–7)</th><th>W2 ('+mon+' 8–14)</th><th>W1→W2 Δ</th>'+
+    '<th>W3 ('+mon+' 15–21)</th><th>W2→W3 Δ</th>'+
+  '</tr></thead><tbody>'+wrows+ctot+'</tbody>';
+
+// ── WoW chart ────────────────────────────────────────────────────────────────
+new Chart(document.getElementById('wowChart'),{
+  type:'bar',
+  data:{
+    labels:['W1 (Jun 1–7)','W2 (Jun 8–14)','W3 (Jun 15–21)'],
+    datasets:D.accounts.map(function(a){return{
+      label:a.name,
+      data:[a.w1t,a.w2t,a.w3t],
+      backgroundColor:a.color,
+      borderRadius:4,
+    };})
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{labels:{color:'#a0aec0',font:{size:11}}}},
+    scales:{
+      x:{ticks:{color:'#718096'},grid:{color:'#1e2a3a'}},
+      y:{ticks:{color:'#718096',callback:function(v){return '$'+fmtW(v);}},grid:{color:'#1e2a3a'}}
+    }
+  }
+});
+
+// ── Movers per account ───────────────────────────────────────────────────────
+document.getElementById('movers-grid').innerHTML=D.accounts.map(function(a){
+  var rows=a.movers.map(function(m){
+    var up=m.delta>0,cls=up?'up':'dn',arrow=up?'▲':'▼';
+    return '<tr>'+
+      '<td style="font-size:11px;color:#a0aec0;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.name+'</td>'+
+      '<td class="mono dim" style="font-size:11px">$'+fmt(m.w2)+'</td>'+
+      '<td class="mono" style="font-size:11px">$'+fmt(m.w3)+'</td>'+
+      '<td class="'+cls+'" style="font-size:11px;white-space:nowrap">'+arrow+' $'+fmt(Math.abs(m.delta))+'</td>'+
+    '</tr>';
+  }).join('');
+  return '<div>'+
+    '<div style="font-size:12px;font-weight:700;color:'+a.color+';margin-bottom:8px">'+a.name+'</div>'+
+    '<table class="svc-table" style="font-size:11px">'+
+      '<thead><tr><th style="text-align:left">Service</th><th>W2</th><th>W3</th><th>Δ</th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table>'+
+  '</div>';
+}).join('');
+
+// ── Per-account service breakdown ────────────────────────────────────────────
+function sortTable(tbodyId,col,asc){
+  var tbody=document.getElementById(tbodyId);
+  if(!tbody)return;
+  var rows=Array.from(tbody.querySelectorAll('tr'));
+  rows.sort(function(a,b){
+    var av=parseFloat(a.dataset['c'+col]||0),bv=parseFloat(b.dataset['c'+col]||0);
+    return asc?av-bv:bv-av;
+  });
+  rows.forEach(function(r){tbody.appendChild(r);});
+}
+document.addEventListener('click',function(e){
+  var th=e.target.closest('.sh');
+  if(!th)return;
+  sortTable(th.dataset.t,parseInt(th.dataset.c),false);
+});
+
+document.getElementById('breakdown').innerHTML=D.accounts.map(function(a,ai){
+  var maxMtd=a.services[0]?a.services[0].mtd:1;
+  var tbId='svc-tbody-'+ai;
+  var rows=a.services.map(function(s,i){
+    var bp=Math.min((s.mtd/maxMtd*100),100).toFixed(1);
+    var delta_html=deltaHtml(s.delta,s.delta_pct,'sm');
+    return '<tr data-c0="'+s.mtd+'" data-c1="'+s.w1+'" data-c2="'+s.w2+'" data-c3="'+s.w3+'" data-c4="'+s.delta+'">'+
+      '<td><div class="svc-name">'+s.name+'</div>'+
+           '<div class="svc-bar-wrap"><div class="svc-bar" style="width:'+bp+'%;background:'+a.color+'66"></div></div></td>'+
+      '<td class="mono">$'+fmt(s.mtd)+'</td>'+
+      '<td class="mono dim">$'+fmt(s.w1)+'</td>'+
+      '<td class="mono dim">$'+fmt(s.w2)+'</td>'+
+      '<td class="mono dim">$'+fmt(s.w3)+'</td>'+
+      '<td>'+delta_html+'</td>'+
+    '</tr>';
+  }).join('');
+
+  return '<div class="breakdown-card" style="border-color:'+a.color+'44">'+
+    '<div class="breakdown-title" style="color:'+a.color+'">'+a.name+'</div>'+
+    '<div class="breakdown-sub">'+a.id+' · '+a.service_count+' services · MTD $'+fmt(a.mtd)+'</div>'+
+    '<div style="overflow-x:auto">'+
+      '<table class="svc-table">'+
+        '<thead><tr>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="0" style="text-align:left">Service ↕</th>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="0">MTD ↕</th>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="1">W1</th>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="2">W2</th>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="3">W3</th>'+
+          '<th class="sh" data-t="'+tbId+'" data-c="4">W2→W3 Δ ↕</th>'+
+        '</tr></thead>'+
+        '<tbody id="'+tbId+'">'+rows+'</tbody>'+
+      '</table>'+
+    '</div>'+
+  '</div>';
+}).join('');
+
+// ── Monthly charts ───────────────────────────────────────────────────────────
+new Chart(document.getElementById('monthlyChart'),{
+  type:'bar',
+  data:{
+    labels:D.months,
+    datasets:D.accounts.map(function(a){return{
+      label:a.name,
+      data:a.monthly,
+      backgroundColor:a.color,
+      borderRadius:4,
+    };})
+  },
+  options:{
+    responsive:true,
+    plugins:{legend:{labels:{color:'#a0aec0',font:{size:11}}}},
+    scales:{
+      x:{ticks:{color:'#718096'},grid:{color:'#1e2a3a'}},
+      y:{ticks:{color:'#718096',callback:function(v){return '$'+fmtW(v);}},grid:{color:'#1e2a3a'}}
+    }
+  }
+});
+
+// Top 5 services per account (horizontal bar, grouped)
+var allSvcs={};
+D.accounts.forEach(function(a){
+  a.services.slice(0,5).forEach(function(s){allSvcs[s.name]=true;});
+});
+var topLabels=Object.keys(allSvcs).slice(0,8);
+new Chart(document.getElementById('topSvcChart'),{
+  type:'bar',
+  data:{
+    labels:topLabels,
+    datasets:D.accounts.map(function(a){return{
+      label:a.name,
+      data:topLabels.map(function(n){var s=a.services.find(function(x){return x.name===n;});return s?s.mtd:0;}),
+      backgroundColor:a.color,
+      borderRadius:3,
+    };})
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true,
+    plugins:{legend:{labels:{color:'#a0aec0',font:{size:11}}}},
+    scales:{
+      x:{ticks:{color:'#718096',callback:function(v){return '$'+fmtW(v);}},grid:{color:'#1e2a3a'}},
+      y:{ticks:{color:'#718096',font:{size:10}},grid:{display:false}}
+    }
+  }
+});
+
+</script>
+</body>
+</html>
